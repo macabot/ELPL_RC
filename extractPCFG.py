@@ -13,7 +13,7 @@ def createGrammar(fileName):
     Arguments:
     fileName    - name of file with tree corpus
     Return:
-    grammar - dictionary that maps rhs to lhs"""
+    grammar     - dictionary that maps rhs to lhs"""
     file = open(fileName, 'r')
     lhsFreq = {} # left hand side frequency
     ruleFreq = {} # rule frequency
@@ -74,7 +74,7 @@ def saveToFile(element, fileName):
     """Saves an object to file. If file already exists, file
     can be overwritten or new name can be given.
     Arguments:
-    element - object that is written to file
+    element     - object that is written to file
     fileName    - name of file"""
     if fileExists(fileName):
         print "Your are about to overwrite %s\n" \
