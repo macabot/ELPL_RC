@@ -40,11 +40,11 @@ def makeTrees(string, grammar):
                 right= parseForest.get((k,j), [])
                 for x in left: # loop over sub-trees with span [i-k)
                     for y in right: # loop over sub-trees with span [k-j)
-                        rhs = ','.join([x[0], y[0]])
+                        rhs = '~'.join([x[0], y[0]])
                         for lhs in grammar.get(rhs, []): # expand trees
                             entry = (lhs[1], x[0], y[0], k) # parent, left-child, right-child, k
                             probEntry = lhs[0]*probs[(x[0], i,k)]*probs[(y[0],k,j)]
-                            if probs.get(entry, -1) < probEntry:
+                            if probs.get((lhs[1], i, j), -1) < probEntry:
                                 parseForest.setdefault((i,j), set([])).add(entry)
                                 probs[(lhs[1], i, j)] = probEntry
                                 extendUnary(entry, grammar, parseForest, probs, i, j) # extend with unary rules                               

@@ -20,13 +20,13 @@ def createGrammar(fileName):
     for line in file:
         rules = extractRules(line) # get rules in tree 
         for rule in rules:
-            lhs = rule.split(',',1)[0]
+            lhs = rule.split('~',1)[0]
             lhsFreq[lhs] = lhsFreq.get(lhs, 0) + 1
             ruleFreq[rule] = ruleFreq.get(rule, 0) + 1
     
     grammar = {} # {rhs: [(prob, lhs),...],...}
     for rule,freq in ruleFreq.iteritems():
-        splitRule = rule.split(',',1)
+        splitRule = rule.split('~',1)
         prob = float(freq) / lhsFreq[splitRule[0]]
         grammar.setdefault(splitRule[1], []).append((prob, splitRule[0]))
         
@@ -51,7 +51,7 @@ def extractRules(string):
             if leftBracket:
                 string = string[1:] # remove '('
             word, string = getFirstWord(string)
-            stack[len(stack)-1] += ',' + word
+            stack[len(stack)-1] += '~' + word
             if leftBracket:
                 stack.append(word)      
         string = string.lstrip() # remove whitespaces from start
