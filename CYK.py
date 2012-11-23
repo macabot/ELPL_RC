@@ -9,7 +9,7 @@ import getopt
 import ast
 import extractPCFG
 
-def makeTrees(string, grammar):
+def makeForest(string, grammar):
     """Creates parse forest: all possible (sub)trees with probabilities
     for a sentence given a grammar.
     Arguments:
@@ -26,7 +26,7 @@ def makeTrees(string, grammar):
     for i in xrange(len(words)): # set terminals in triangle table
         word = words[i]
         for lhs in grammar.get(word, []): # TODO if word not in grammar
-            entry = (lhs[1], word, None, None) # parent, left-child, _right-child, _k
+            entry = (lhs[1], word, None, i+1) # parent, left-child, _right-child, _k
             parseForest.setdefault((i,i+1), set([])).add(entry)
             probs[(lhs[1], i, i+1)] = lhs[0]
             extendUnary(entry, grammar, parseForest, probs, i, i+1) # extend with unary rules            
@@ -63,7 +63,7 @@ def extendUnary(entry, grammar, parseForest, probs, i, j):
     for lhs in grammar.get(entry[0], []):
         if lhs[1]==entry[0]: # prevent X->X
             continue
-        newEntry = (lhs[1], entry[0], None, None)
+        newEntry = (lhs[1], entry[0], None, j)
         parseForest[(i,j)].add(newEntry)
         probs[(lhs[1], i, j)] = lhs[0] * probs[(entry[0], i, j)]
         extendUnary(newEntry, grammar, parseForest, probs, i, j)
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         testFile = open(testFileName, 'r')
         for line in testFile: # read from file
             print line
-            parseForest, probs = makeTrees(line.strip(), grammar)
+            parseForest, probs = makeForest(line.strip(), grammar)
             for entry in parseForest.get((0,len(line.split(' '))), []):
                 if entry[0]=='TOP':
                     print entry
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         print "Enter a sentence. Type 'q' to quit."
         line = raw_input("Sentence: ")
         while line!='q': # read from stdin
-            parseForest, probs = makeTrees(line.strip(), grammar)
+            parseForest, probs = makeForest(line.strip(), grammar)
             for entry in parseForest.get((0,len(line.split(' '))), []):
                 if entry[0]=='TOP':
                     print entry
