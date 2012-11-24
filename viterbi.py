@@ -12,18 +12,32 @@ import extractPCFG
 
 
 def mostProbableTree(string, grammar):
+    """Creates a parse forest an creates most probable
+    parse tree.
+    Arguments:
+    string      - contains words separated by single whitespace
+    grammar     - dictionary mapping rhs to [(P(rule_1), lhs_1), ..., (P(rule_n), lhs_n)]
+    Return:
+    nltk.Tree() -  most probable parse tree"""
     parseForest, probs = CYK.makeForest(string, grammar)
     j = len(string.split())
     return viterbi(parseForest, probs, 0, j)
     
 def viterbi(parseForest, probs, i, j, node='TOP', repeat=False):
+    """Finds the most probable parse tree.
+    Arguments:
+    parseForest - dictionary that maps span [i,j) to grammar rules
+    probs       - dictionary that maps entries in 'parseForest' to their probability
+    i           - left index of span (inclusive)
+    j           - right index of span (exclusive)
+    node        - current node to be explored
+    repeat      - keeps track of X->X rules
+    Return:
+    nltk.Tree() - most probable parse tree"""
     entry = maxEntry(parseForest[(i,j)], probs, i, j, node) # parent, left-child, right-child, k
     if not entry or repeat:
         return node
-    if entry[1]==node and entry[2]==None: #X->X only allowed once
-        repeat = True
-    else:
-        repeat = False
+    repeat = entry[1]==node and not entry[2] #X->X only allowed once
     leftChild = viterbi(parseForest, probs, i, entry[3], entry[1], repeat)
     if entry[2]: # if binary rule
         rightChild = viterbi(parseForest, probs, entry[3], j, entry[2], repeat)
@@ -32,6 +46,17 @@ def viterbi(parseForest, probs, i, j, node='TOP', repeat=False):
         return nltk.Tree(entry[0], [leftChild])
         
 def maxEntry(entries, probs, i, j, node):
+    """Finds the entry with the highest probability that starts
+    with 'node'.
+    Arguments:
+    entries     - list of entries (parent, leftChild, rightChild, k)
+    probs       - dictionary mapping entry to its probability
+    i           - left index of span (inclusive)
+    j           - right index of span (exclusive)
+    node        - first argument of entry must be equal to 'node'
+    Return:
+    bestEntry   - entry with highest probability that starts with
+    'node'"""
     bestEntry = None
     bestProb = -1
     for entry in entries:
