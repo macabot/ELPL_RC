@@ -69,13 +69,13 @@ if __name__ == "__main__":
     # TODO if given -c and -g then don't ignore -c, but create a new grammar using
     # -c and save as -g
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "c:g:s:t:")
+        opts, args = getopt.getopt(sys.argv[1:], "c:g:s:p:")
     except getopt.GetoptError as e:
         print e
         sys.exit(2) # command line error
         
     corpusFileName, grammarFileName = None, None
-    testFileName, targetFileName = None, None
+    testFileName, parsesFileName = None, None
     for opt, arg in opts:
         if opt == "-c": # tree corpus
             corpusFileName = arg
@@ -83,8 +83,8 @@ if __name__ == "__main__":
             grammarFileName = arg
         elif opt == "-s": # test sentences
             testFileName = arg
-        elif opt == "-t": # target trees for test sentences
-            targetFileName = arg
+        elif opt == "-p": # most probable trees for test sentences
+            parsesFileName = arg
     # read/create grammar
     if not corpusFileName and not grammarFileName: # no tree corpus or grammar given
         print "Use '-c <file>' to give a tree corpus or '-g <file>' to give a grammar."
@@ -113,7 +113,10 @@ if __name__ == "__main__":
         if not extractPCFG.fileExists(testFileName):
             print "The file '%s' does not exist." %testFileName
             sys.exit(2)
+        if not parsesFileName:
+            parsesFileName = "parses_"+testFileName
         testFile = open(testFileName, 'r')
+        parsesFile = open(parsesFileName, 'w') # TODO check if going to overwrite file
         for line in testFile: # read from file
             print line
             print mostProbableTree(line, grammar)            
