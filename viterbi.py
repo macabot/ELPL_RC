@@ -16,13 +16,17 @@ def mostProbableTree(string, grammar):
     j = len(string.split())
     return viterbi(parseForest, probs, 0, j)
     
-def viterbi(parseForest, probs, i, j, node='TOP'):
+def viterbi(parseForest, probs, i, j, node='TOP', repeat=False):
     entry = maxEntry(parseForest[(i,j)], probs, i, j, node) # parent, left-child, right-child, k
-    if not entry:
-        return nltk.Tree(node, []) # viterbi(_,_,_i,_j, ',') >> infinite loop
-    leftChild = viterbi(parseForest, probs, i, entry[3], entry[1])
+    if not entry or repeat:
+        return node
+    if entry[1]==node and entry[2]==None: #X->X only allowed once
+        repeat = True
+    else:
+        repeat = False
+    leftChild = viterbi(parseForest, probs, i, entry[3], entry[1], repeat)
     if entry[2]: # if binary rule
-        rightChild = viterbi(parseForest, probs, entry[3], j, entry[2])
+        rightChild = viterbi(parseForest, probs, entry[3], j, entry[2], repeat)
         return nltk.Tree(entry[0], [leftChild, rightChild])
     else: # if unary rule
         return nltk.Tree(entry[0], [leftChild])
@@ -92,5 +96,7 @@ if __name__ == "__main__":
         print "Enter a sentence. Type 'q' to quit."
         line = raw_input("Sentence: ")
         while line!='q': # read from stdin
-            print mostProbableTree(line, grammar)
+            bestTree = mostProbableTree(line, grammar)
+            print bestTree
+            bestTree.draw()            
             line = raw_input("Sentence: ")
