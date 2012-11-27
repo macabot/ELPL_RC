@@ -9,14 +9,14 @@ import getopt
 import os
 
 def createGrammar(fileName, minTerminalFreq):
-    """Creates grammar from corpus.
+    """Creates grammar from tree corpus.
     Arguments:
-    fileName    - name of file with tree corpus
+    fileName        - name of file with tree corpus
+    minTerminalFreq - words that have a lower frequency are replaced
     Return:
-    grammar     - dictionary that maps rhs to lhs"""
-    stringFile = preprocess(fileName, minTerminalFreq)
-    lhsFreq, ruleFreq, _ = grammarFreqs(stringFile)    
-    
+    grammar     - dictionary that maps rhs to list of p(rule) and lhs"""
+    treeList = preprocess(fileName, minTerminalFreq)
+    lhsFreq, ruleFreq = grammarFreq(treeList)
     grammar = {} # {rhs: [(prob, lhs),...],...}
     for rule,freq in ruleFreq.iteritems():
         splitRule = rule.split('~',1)
@@ -24,39 +24,27 @@ def createGrammar(fileName, minTerminalFreq):
         grammar.setdefault(splitRule[1], []).append((prob, splitRule[0]))
     
     return grammar
-
-def smoothGrammar(minTerminalFreq, terminalFreq):
-    for terminal, freq in terminalFreq.iteritems():
-        if freq <= minTerminalFreq:
-            temp = grammar[terminal]
-            del grammar[terminal]
-            grammar.setdefault('XXXUNKNOWNXXX', []).extend(temp)
-        
-def preprocess(fileName, minTerminalFreq):
-    file = open(fileName, 'r')
-    stringFile = file.read()
-    _, _, terminalFreq = grammarFreqs(file)
-    for terminal, freq in terminalFreq.iteritems():
-        if freq <= minTerminalFreq:
-            stringFile = stringFile.replace(' '+terminal+')',' XXXUNKNOWNXXX)')
-    saveToFile(stringFile,'replace')
-    return stringFile.split('\n')
-    
-    
-def grammarFreqs(file):
+      
+def grammarFreq(file):
+    """Count the frequency of all the grammar rules and 
+    left-hand-sides in a file.
+    Arguments:
+    file        - file with tree corpus
+    Return:
+    lhsFreq     - dictionary mapping left-hand-side to its frequency
+    ruleFreq    - dictionary mapping grammar rule to its frequency"""
     lhsFreq = {} # left hand side frequency
     ruleFreq = {} # rule frequency
-    terminalFreq = {} # terminal frequency
     for line in file:
-        rules = extractRules(line, terminalFreq) # get rules in tree 
+        rules = extractRules(line) # get rules in tree 
         for rule in rules:
             lhs = rule.split('~',1)[0]
             lhsFreq[lhs] = lhsFreq.get(lhs, 0) + 1
             ruleFreq[rule] = ruleFreq.get(rule, 0) + 1
             
-    return lhsFreq, ruleFreq, terminalFreq
-    
-def extractRules(string, terminalFreq):
+    return lhsFreq, ruleFreq
+        
+def extractRules(string):
     """Extracts rules from parse tree.
     Arguments:
     string  - parse tree
@@ -78,13 +66,64 @@ def extractRules(string, terminalFreq):
             stack[len(stack)-1] += '~' + word
             if leftBracket:
                 stack.append(word) 
-            else:
-                terminalFreq[word] = terminalFreq.get(word, 0) + 1
-			
+            
         string = string.lstrip() # remove whitespaces from start
         
     rules.append(stack.pop()) # add TOP rule to rules
     return rules
+
+def preprocess(fileName, minTerminalFreq):
+    """Preprocess a tree corpus by replacing infrequent words with
+    'XXXUNKNOWNXXX'. This allows the grammar to allow future unknown words.
+    Arguments:
+    fileName        - name of file with tree corpus
+    minTerminalFreq - words that have a lower frequency are replaced
+    Return:
+    list of parse trees where infrequent words are replaced with XXXUNKNOWNXXX"""
+    file = open(fileName, 'r')
+    terminalCount = terminalFreq(file)    
+    stringFile = open(fileName, 'r').read()
+    for terminal, freq in terminalCount.iteritems():
+        if freq < minTerminalFreq:
+            stringFile = stringFile.replace(' '+terminal+')',' XXXUNKNOWNXXX)')
+    
+    return stringFile.split('\n')
+    
+def terminalFreq(file):
+    """Count the frequency of all the terminals in a file.
+    Arguments:
+    file            - file with tree corpus
+    Return:
+    terminalFreq    - dictionary mapping terminal to its frequency"""
+    terminalFreq = {} # terminal frequency
+    for line in file:
+        terminals = extractTerminals(line)
+        for t in terminals:
+            terminalFreq[t] = terminalFreq.get(t, 0)+1
+    return terminalFreq
+    
+def extractTerminals(string):
+    """Extracts terminals from parse tree.
+    Arguments:
+    string  - parse tree
+    Return:
+    rules   - list of terminals in the parse tree"""
+    string = string.strip() # remove whitespace+\n at start and end
+    terminals = [] # terminals in tree
+    while len(string) > 0:        
+        if string[0]==')':
+            string = string[1:] # remove ')'
+        else:
+            leftBracket = string[0]=='('
+            if leftBracket:
+                string = string[1:] # remove '('
+            word, string = getFirstWord(string)
+            if not leftBracket:
+                terminals.append(word)     
+			
+        string = string.lstrip() # remove whitespaces from start
+        
+    return terminals
 
 def getFirstWord(string):
     """Get first word of partially parsed parse tree
@@ -97,13 +136,13 @@ def getFirstWord(string):
     string = string.replace(word, '', 1) # remove first occurence
     return word, string
     
-def saveToFile(element, fileName):
+def saveToFile(element, fileName, verbose=True):
     """Saves an object to file. If file already exists, file
     can be overwritten or new name can be given.
     Arguments:
     element     - object that is written to file
     fileName    - name of file"""
-    if fileExists(fileName):
+    if verbose and fileExists(fileName):
         print "Your are about to overwrite %s\n" \
             "y\t\t- To overwrite the file.\n" \
             "<new name>\t- To change the name." %fileName

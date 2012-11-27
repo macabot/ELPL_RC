@@ -1,1 +1,2 @@
 (TOP (S (X (X (A a) (A a)) (X (A a) ))))
+(TOP (S (X (X (A b) (A b)) (X (A b) ))))
