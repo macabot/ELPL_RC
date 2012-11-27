@@ -8,7 +8,7 @@ import sys
 import getopt
 import os
 
-def createGrammar(fileName):
+def createGrammar(fileName, minTerminalFreq):
     """Creates grammar from corpus.
     Arguments:
     fileName    - name of file with tree corpus
@@ -17,8 +17,9 @@ def createGrammar(fileName):
     file = open(fileName, 'r')
     lhsFreq = {} # left hand side frequency
     ruleFreq = {} # rule frequency
+    terminalFreq = {} # terminal frequency
     for line in file:
-        rules = extractRules(line) # get rules in tree 
+        rules,terminals = extractRules(line, terminalFreq) # get rules in tree 
         for rule in rules:
             lhs = rule.split('~',1)[0]
             lhsFreq[lhs] = lhsFreq.get(lhs, 0) + 1
@@ -29,10 +30,11 @@ def createGrammar(fileName):
         splitRule = rule.split('~',1)
         prob = float(freq) / lhsFreq[splitRule[0]]
         grammar.setdefault(splitRule[1], []).append((prob, splitRule[0]))
-        
+     
+    smoothGrammar(grammar, minTerminalFreq)
     return grammar
 
-def extractRules(string):
+def extractRules(string, terminalFreq):
     """Extracts rules from parse tree.
     Arguments:
     string  - parse tree
@@ -53,7 +55,10 @@ def extractRules(string):
             word, string = getFirstWord(string)
             stack[len(stack)-1] += '~' + word
             if leftBracket:
-                stack.append(word)      
+                stack.append(word) 
+            else:
+                terminalFreq[word] = terminalFreq.get(word, 0) + 1
+			
         string = string.lstrip() # remove whitespaces from start
         
     rules.append(stack.pop()) # add TOP rule to rules
