@@ -14,26 +14,48 @@ def createGrammar(fileName, minTerminalFreq):
     fileName    - name of file with tree corpus
     Return:
     grammar     - dictionary that maps rhs to lhs"""
-    file = open(fileName, 'r')
-    lhsFreq = {} # left hand side frequency
-    ruleFreq = {} # rule frequency
-    terminalFreq = {} # terminal frequency
-    for line in file:
-        rules,terminals = extractRules(line, terminalFreq) # get rules in tree 
-        for rule in rules:
-            lhs = rule.split('~',1)[0]
-            lhsFreq[lhs] = lhsFreq.get(lhs, 0) + 1
-            ruleFreq[rule] = ruleFreq.get(rule, 0) + 1
+    stringFile = preprocess(fileName, minTerminalFreq)
+    lhsFreq, ruleFreq, _ = grammarFreqs(stringFile)    
     
     grammar = {} # {rhs: [(prob, lhs),...],...}
     for rule,freq in ruleFreq.iteritems():
         splitRule = rule.split('~',1)
         prob = float(freq) / lhsFreq[splitRule[0]]
         grammar.setdefault(splitRule[1], []).append((prob, splitRule[0]))
-     
-    smoothGrammar(grammar, minTerminalFreq)
+    
     return grammar
 
+def smoothGrammar(minTerminalFreq, terminalFreq):
+    for terminal, freq in terminalFreq.iteritems():
+        if freq <= minTerminalFreq:
+            temp = grammar[terminal]
+            del grammar[terminal]
+            grammar.setdefault('XXXUNKNOWNXXX', []).extend(temp)
+        
+def preprocess(fileName, minTerminalFreq):
+    file = open(fileName, 'r')
+    stringFile = file.read()
+    _, _, terminalFreq = grammarFreqs(file)
+    for terminal, freq in terminalFreq.iteritems():
+        if freq <= minTerminalFreq:
+            stringFile = stringFile.replace(' '+terminal+')',' XXXUNKNOWNXXX)')
+    saveToFile(stringFile,'replace')
+    return stringFile.split('\n')
+    
+    
+def grammarFreqs(file):
+    lhsFreq = {} # left hand side frequency
+    ruleFreq = {} # rule frequency
+    terminalFreq = {} # terminal frequency
+    for line in file:
+        rules = extractRules(line, terminalFreq) # get rules in tree 
+        for rule in rules:
+            lhs = rule.split('~',1)[0]
+            lhsFreq[lhs] = lhsFreq.get(lhs, 0) + 1
+            ruleFreq[rule] = ruleFreq.get(rule, 0) + 1
+            
+    return lhsFreq, ruleFreq, terminalFreq
+    
 def extractRules(string, terminalFreq):
     """Extracts rules from parse tree.
     Arguments:
@@ -129,5 +151,5 @@ if __name__ == "__main__":
         grammarFileName = 'grammar_' + name + extension
         print "The grammar file is saved as: %s" %grammarFileName
     
-    grammar = createGrammar(trainFileName)
+    grammar = createGrammar(trainFileName, 5)
     saveToFile(grammar, grammarFileName)
