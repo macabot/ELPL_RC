@@ -11,7 +11,8 @@ import extractPCFG
 
 def makeForest(string, grammar):
     """Creates parse forest: all possible (sub)trees with probabilities
-    for a sentence given a grammar.
+    for a sentence given a grammar. Unknown words will be replaced by 
+    'XXXUNKNOWNXXX'.
     Arguments:
     string      - contains words separated by single whitespace
     grammar     - dictionary mapping rhs to [(P(rule_1), lhs_1), ..., (P(rule_n), lhs_n)]
@@ -25,7 +26,7 @@ def makeForest(string, grammar):
     # initialize 
     for i in xrange(len(words)): # set terminals in triangle table
         word = words[i]
-        for lhs in grammar.get(word, []): # TODO if word not in grammar
+        for lhs in grammar.get(word, grammar.get('XXXUNKNOWNXXX', [])): 
             entry = (lhs[1], word, None, i+1) # parent, left-child, _right-child, _k
             parseForest.setdefault((i,i+1), set([])).add(entry)
             probs[(lhs[1], i, i+1)] = lhs[0]

@@ -15,8 +15,8 @@ def createGrammar(fileName, minTerminalFreq):
     minTerminalFreq - words that have a lower frequency are replaced
     Return:
     grammar     - dictionary that maps rhs to list of p(rule) and lhs"""
-    treeList = preprocess(fileName, minTerminalFreq)
-    lhsFreq, ruleFreq = grammarFreq(treeList)
+    infrequent = infrequentTerminals(fileName, minTerminalFreq)
+    lhsFreq, ruleFreq = grammarFreq(fileName, infrequent)
     grammar = {} # {rhs: [(prob, lhs),...],...}
     for rule,freq in ruleFreq.iteritems():
         splitRule = rule.split('~',1)
@@ -25,18 +25,20 @@ def createGrammar(fileName, minTerminalFreq):
     
     return grammar
       
-def grammarFreq(file):
+def grammarFreq(fileName, infrequent=set([])):
     """Count the frequency of all the grammar rules and 
     left-hand-sides in a file.
     Arguments:
-    file        - file with tree corpus
+    fileName    - name of file with tree corpus
+    infrequent  - set of infrequent terminals
     Return:
     lhsFreq     - dictionary mapping left-hand-side to its frequency
     ruleFreq    - dictionary mapping grammar rule to its frequency"""
+    file = open(fileName, 'r')
     lhsFreq = {} # left hand side frequency
     ruleFreq = {} # rule frequency
     for line in file:
-        rules = extractRules(line) # get rules in tree 
+        rules = extractRules(line, infrequent) # get rules in tree 
         for rule in rules:
             lhs = rule.split('~',1)[0]
             lhsFreq[lhs] = lhsFreq.get(lhs, 0) + 1
@@ -44,10 +46,11 @@ def grammarFreq(file):
             
     return lhsFreq, ruleFreq
         
-def extractRules(string):
+def extractRules(string, infrequent=set([])):
     """Extracts rules from parse tree.
     Arguments:
     string  - parse tree
+    infrequent  - infrequent terminals in this set will be replace by 'XXXUNKNOWNXXX'
     Return:
     rules   - list of rules that make up the parse tree"""
     string = string.strip() # remove whitespace+\n @ start and end
@@ -63,6 +66,8 @@ def extractRules(string):
             if leftBracket:
                 string = string[1:] # remove '('
             word, string = getFirstWord(string)
+            if not leftBracket and word in infrequent:
+                word = 'XXXUNKNOWNXXX' # replace infrequent terminal
             stack[len(stack)-1] += '~' + word
             if leftBracket:
                 stack.append(word) 
@@ -72,22 +77,21 @@ def extractRules(string):
     rules.append(stack.pop()) # add TOP rule to rules
     return rules
 
-def preprocess(fileName, minTerminalFreq):
-    """Preprocess a tree corpus by replacing infrequent words with
-    'XXXUNKNOWNXXX'. This allows the grammar to allow future unknown words.
+def infrequentTerminals(fileName, minTerminalFreq):
+    """Find the set of terminals that occur infrequently in a file.
     Arguments:
     fileName        - name of file with tree corpus
     minTerminalFreq - words that have a lower frequency are replaced
     Return:
-    list of parse trees where infrequent words are replaced with XXXUNKNOWNXXX"""
+    set of infrequent terminals"""
     file = open(fileName, 'r')
     terminalCount = terminalFreq(file)    
-    stringFile = open(fileName, 'r').read()
+    infrequent = set([]) # set of infrequent terminals
     for terminal, freq in terminalCount.iteritems():
         if freq < minTerminalFreq:
-            stringFile = stringFile.replace(' '+terminal+')',' XXXUNKNOWNXXX)')
+            infrequent.add(terminal)
     
-    return stringFile.split('\n')
+    return infrequent
     
 def terminalFreq(file):
     """Count the frequency of all the terminals in a file.
@@ -190,5 +194,6 @@ if __name__ == "__main__":
         grammarFileName = 'grammar_' + name + extension
         print "The grammar file is saved as: %s" %grammarFileName
     
-    grammar = createGrammar(trainFileName, 5)
+    minTerminalFreq = 5 # minimal frequency of terminal. if lower, then replace by 'XXXUNKNOWNXXX'
+    grammar = createGrammar(trainFileName, minTerminalFreq)
     saveToFile(grammar, grammarFileName)
