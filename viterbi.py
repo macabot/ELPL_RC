@@ -173,7 +173,7 @@ if __name__ == "__main__":
                     parsesFile.write(bestTree.pprint(margin=100000000000000000000)+"\n") # large margin to counter pretty print
                 else:
                     logging.warning("Could not parse: %s" %line)
-                    parsesFile.write("Warning: could not parse")
+                    parsesFile.write("Warning: could not parse.\n")
             except Exception, e:
                 print "Could not parse: %s" %line
                 print traceback.format_exc()
