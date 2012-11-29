@@ -1,1 +1,0 @@
-(TOP (S (NP (D the) (N boy)) (VP (V eats) (NP (D the) (N dog)))))
