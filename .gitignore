@@ -1,6 +1,9 @@
 # byte code
 *.py[co]
+
 # log
 debug.log
-# test python files without changing __main__
+
+# debugging
 test.py
+*.txt
