@@ -2,3 +2,5 @@
 *.py[co]
 # log
 debug.log
+# test python files without changing __main__
+test.py
