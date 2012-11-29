@@ -23,6 +23,8 @@ def mostProbableTree(string, grammar):
     nltk.Tree() -  most probable parse tree"""
     parseForest, probs = CYK.makeForest(string, grammar)
     j = len(string.split())
+    if not (0,j) in parseForest:
+        return None
     bestTree = viterbi(parseForest, probs, 0, j)
     unbinarizeAndReunarize(bestTree)
     return bestTree
@@ -167,7 +169,11 @@ if __name__ == "__main__":
         for line in testFile: # read from file
             try:
                 bestTree = mostProbableTree(line, grammar)
-                parsesFile.write(bestTree.pprint(margin=100000000000000000000)+"\n") # large margin counters pretty print
+                if bestTree:
+                    parsesFile.write(bestTree.pprint(margin=100000000000000000000)+"\n") # large margin to counter pretty print
+                else:
+                    logging.warning("Could not parse: %s" %line)
+                    parsesFile.write("Warning: could not parse")
             except Exception, e:
                 print "Could not parse: %s" %line
                 print traceback.format_exc()
@@ -180,6 +186,9 @@ if __name__ == "__main__":
         line = raw_input("Sentence: ")
         while line!='q': # read from stdin
             bestTree = mostProbableTree(line, grammar)
-            print bestTree
-            bestTree.draw()            
+            if bestTree:
+                print bestTree
+                bestTree.draw()
+            else:
+                print "Warning: could not parse"
             line = raw_input("Sentence: ")
