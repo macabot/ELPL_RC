@@ -167,7 +167,7 @@ if __name__ == "__main__":
         for line in testFile: # read from file
             try:
                 bestTree = mostProbableTree(line, grammar)
-                parsesFile.write(bestTree.pprint(margin=100000000000000000000)+"\n")       
+                parsesFile.write(bestTree.pprint(margin=100000000000000000000)+"\n") # large margin counters pretty print
             except Exception, e:
                 print "Could not parse: %s" %line
                 print traceback.format_exc()

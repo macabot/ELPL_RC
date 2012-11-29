@@ -3,7 +3,6 @@ By:
 Michael Cabot (6047262), Richard Rozeboom (6173292)
 '''
 
-#import nltk
 import sys
 import getopt
 import ast
