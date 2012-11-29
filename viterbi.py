@@ -5,6 +5,8 @@ Michael Cabot (6047262), Richard Rozeboom (6173292)
 
 import nltk.tree
 import sys
+import logging
+import traceback
 import getopt
 import ast
 import CYK
@@ -21,8 +23,45 @@ def mostProbableTree(string, grammar):
     nltk.Tree() -  most probable parse tree"""
     parseForest, probs = CYK.makeForest(string, grammar)
     j = len(string.split())
-    return viterbi(parseForest, probs, 0, j)
+    bestTree = viterbi(parseForest, probs, 0, j)
+    unbinarizeAndReunarize(bestTree)
+    return bestTree
     
+def unbinarizeAndReunarize(tree):
+    """Unbinarize and re-unarize a parse tree. Replace child
+    that contains @ with its children. Extend node <A>%%%%%<B>
+    by <A> --> <B>.
+    Arguments:
+    tree    - nltk parse tree"""
+    i = 0
+    while i < len(tree):
+        child = tree[i]
+        if not isinstance(child, str): 
+            if "@" in child.node: # unbinarize
+                tree.pop(i)
+                tree[i:i] = list(child)
+                i -= 1
+            elif "%%%%%" in child.node: # re-unarize
+                split = child.node.split("%%%%%")
+                child.node = split[0]
+                grandChildren = removeChildren(child)
+                newChild = nltk.Tree(split[1], grandChildren)
+                child.append(newChild)
+                
+            unbinarizeAndReunarize(child)
+        i += 1
+
+def removeChildren(tree):
+    """Remove the children from parse tree
+    Arguments:
+    tree - nltk parse tree
+    Return:
+    list with children of tree"""
+    children = []
+    while len(tree)>0:
+        children.append(tree.pop())
+    return children
+            
 def viterbi(parseForest, probs, i, j, node='TOP', repeat=False):
     """Finds the most probable parse tree.
     Arguments:
@@ -66,8 +105,6 @@ def maxEntry(entries, probs, i, j, node):
     return bestEntry
 
 if __name__ == "__main__":
-    # TODO if given -c and -g then don't ignore -c, but create a new grammar using
-    # -c and save as -g
     try:
         opts, args = getopt.getopt(sys.argv[1:], "c:g:s:p:")
     except getopt.GetoptError as e:
@@ -115,11 +152,29 @@ if __name__ == "__main__":
             sys.exit(2)
         if not parsesFileName:
             parsesFileName = "parses_"+testFileName
+        
+        if extractPCFG.fileExists(parsesFileName): # check if going to overwrite file
+            print "Your are about to overwrite %s\n" \
+            "y\t\t- To overwrite the file.\n" \
+            "<new name>\t- To change the name." %fileName
+            input = raw_input()
+            if input!='y':
+                parsesFileName = input
+        
+        parsesFile = open(parsesFileName, 'w') 
+        logging.basicConfig(filename='debug.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
         testFile = open(testFileName, 'r')
-        parsesFile = open(parsesFileName, 'w') # TODO check if going to overwrite file
         for line in testFile: # read from file
-            print line
-            print mostProbableTree(line, grammar)            
+            try:
+                bestTree = mostProbableTree(line, grammar)
+                parsesFile.write(bestTree.pprint(margin=100000000000000000000)+"\n")       
+            except Exception, e:
+                print "Could not parse: %s" %line
+                print traceback.format_exc()
+                logging.exception("Could not parse: %s" %line)
+                parsesFile.write("Error: see 'debug.log'\n")
+                
+        parsesFile.close()
     else:
         print "Enter a sentence. Type 'q' to quit."
         line = raw_input("Sentence: ")

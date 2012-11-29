@@ -1,0 +1,4 @@
+# byte code
+*.py[co]
+# log
+debug.log
