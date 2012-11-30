@@ -61,7 +61,7 @@ def removeChildren(tree):
     list with children of tree"""
     children = []
     while len(tree)>0:
-        children.append(tree.pop())
+        children.append(tree.pop(0))
     return children
             
 def viterbi(parseForest, probs, i, j, node='TOP', repeat=False):
@@ -158,7 +158,7 @@ if __name__ == "__main__":
         if extractPCFG.fileExists(parsesFileName): # check if going to overwrite file
             print "Your are about to overwrite %s\n" \
             "y\t\t- To overwrite the file.\n" \
-            "<new name>\t- To change the name." %fileName
+            "<new name>\t- To change the name." %parsesFileName
             input = raw_input()
             if input!='y':
                 parsesFileName = input
