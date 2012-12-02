@@ -16,7 +16,7 @@ def makeForest(string, grammar):
     string      - contains words separated by single whitespace
     grammar     - dictionary mapping rhs to [(P(rule_1), lhs_1), ..., (P(rule_n), lhs_n)]
     Return:
-    parseForest - dictionary mapping span [i,j) to entries (parent, left-child, right-child, k)
+    parseForest - dictionary mapping span [i,j) to dictionary mapping parent to (left-child, right-child, k)
     probs       - dictionary mapping (node, i, j) to P(node)"""
     string = string.strip() # remove whitespace+\n @ start and end 
     parseForest = {} # condenses all possible parse tree
@@ -26,47 +26,47 @@ def makeForest(string, grammar):
     for i in xrange(len(words)): # set terminals in triangle table
         word = words[i]
         for lhs in grammar.get(word, grammar.get('XXXUNKNOWNXXX', [])): 
-            entry = (lhs[1], word, None, i+1) # parent, left-child, _right-child, _k
-            parseForest.setdefault((i,i+1), set([])).add(entry)
-            probs[(lhs[1], i, i+1)] = lhs[0]
-            extendUnary(entry, grammar, parseForest, probs, i, i+1) # extend with unary rules            
+            # entry at (i,i+1) is dictionary with key=lhs[1]=parent and value=(leftChild, rightChild, k)
+            parseForest.setdefault((i,i+1), {})[lhs[1]] = (word, None, i+1) 
+            probs[(lhs[1], i, i+1)] = lhs[0] # set probability of node
+            extendUnary(lhs[1], grammar, parseForest, probs, i, i+1) # extend with unary rules            
             
     # expand
     for span in xrange(2, len(words)+1): # loop over spans
         for i in xrange(len(words)-span+1): # loop over sub-spans [i-k), [k-j)
             j = i+span
             for k in xrange(i+1, j): # k splits span [i,j)
-                left = parseForest.get((i,k), [])
-                right= parseForest.get((k,j), [])
-                for x in left: # loop over sub-trees with span [i-k)
-                    for y in right: # loop over sub-trees with span [k-j)
-                        rhs = '~'.join([x[0], y[0]])
+                left = parseForest.get((i,k), {})
+                right= parseForest.get((k,j), {})
+                for x in left: # loop over nodes with span [i-k)
+                    for y in right: # loop over nodes with span [k-j)
+                        rhs = '~'.join([x, y])
                         for lhs in grammar.get(rhs, []): # expand trees
-                            entry = (lhs[1], x[0], y[0], k) # parent, left-child, right-child, k
-                            probEntry = lhs[0]*probs[(x[0], i,k)]*probs[(y[0],k,j)]
-                            if probs.get((lhs[1], i, j), -1) < probEntry:
-                                parseForest.setdefault((i,j), set([])).add(entry)
-                                probs[(lhs[1], i, j)] = probEntry
-                                extendUnary(entry, grammar, parseForest, probs, i, j) # extend with unary rules                               
+                            currentProb = lhs[0]*probs[(x,i,k)]*probs[(y,k,j)]
+                            if currentProb > probs.get((lhs[1], i, j), -1):
+                                probs[(lhs[1], i, j)] = currentProb
+                                parseForest.setdefault((i,j), {})[lhs[1]] = (x, y, k)
+                                extendUnary(lhs[1], grammar, parseForest, probs, i, j) # extend with unary rules                               
     
     return parseForest, probs
                     
-def extendUnary(entry, grammar, parseForest, probs, i, j):
+def extendUnary(node, grammar, parseForest, probs, i, j):
     """Finds entries that extend a tree with unary rules.
     Arguments:
-    entry       - (parent, left-child, _right-child, _k)
+    node        - current node to be extended with unary rules
     grammar     - dictionary mapping rhs to lhs
     parseForest - dictionary mapping span [i,j) to entries
     probs       - dictionary mapping (node, i, j) to P(node)
     i           - left index of span (inclusive)
     j           - right index of span (exclusive)"""
-    for lhs in grammar.get(entry[0], []):
-        if lhs[1]==entry[0]: # prevent X->X
+    for lhs in grammar.get(node, []):
+        if lhs[1]==node: # prevent X->X
             continue
-        newEntry = (lhs[1], entry[0], None, j)
-        parseForest[(i,j)].add(newEntry)
-        probs[(lhs[1], i, j)] = lhs[0] * probs[(entry[0], i, j)]
-        extendUnary(newEntry, grammar, parseForest, probs, i, j)
+        currentProb = lhs[0] * probs[(node, i, j)]
+        if currentProb > probs.get((lhs[1], i, j), -1):
+            probs[(lhs[1], i, j)] = currentProb
+            parseForest[(i,j)][lhs[1]] = (node, None, j)
+            extendUnary(lhs[1], grammar, parseForest, probs, i, j)
                     
 if __name__ == "__main__":
     # TODO if given -c and -g then don't ignore -c, but create a new grammar using
@@ -116,18 +116,27 @@ if __name__ == "__main__":
             sys.exit(2)
         testFile = open(testFileName, 'r')
         for line in testFile: # read from file
+            line = line.strip()
             print line
-            parseForest, probs = makeForest(line.strip(), grammar)
-            for entry in parseForest.get((0,len(line.split(' '))), []):
-                if entry[0]=='TOP':
-                    print entry
+            parseForest, _ = makeForest(line.strip(), grammar)
+            wordAmount = len(line.split(' '))
+            nodes = parseForest.get((0, wordAmount), {})
+            if 'TOP' in nodes:
+                print 'TOP', nodes['TOP']
+            else:
+                print 'No parse'
     else:
         print "Enter a sentence. Type 'q' to quit."
         line = raw_input("Sentence: ")
         while line!='q': # read from stdin
-            parseForest, probs = makeForest(line.strip(), grammar)
-            for entry in parseForest.get((0,len(line.split(' '))), []):
-                if entry[0]=='TOP':
-                    print entry
+            line = line.strip()
+            parseForest, _ = makeForest(line, grammar)
+            wordAmount = len(line.split(' '))
+            nodes = parseForest.get((0, wordAmount), {})
+            if 'TOP' in nodes:
+                print 'TOP', nodes['TOP']
+            else:
+                print 'No parse'
+                
             line = raw_input("Sentence: ")
     
