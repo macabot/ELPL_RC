@@ -9,6 +9,7 @@ import logging
 import traceback
 import getopt
 import ast
+import time
 import CYK
 import extractPCFG
 
@@ -147,6 +148,8 @@ if __name__ == "__main__":
         parsesFile = open(parsesFileName, 'w') 
         logging.basicConfig(filename='debug.log',level=logging.DEBUG, format='%(asctime)s %(message)s')
         testFile = open(testFileName, 'r')
+        print 'Start parsing at: %s' %time.asctime()
+        start = time.clock() # start timing parsing time
         for line in testFile: # read from file
             try:
                 bestTree = mostProbableTree(line, grammar)
@@ -162,6 +165,8 @@ if __name__ == "__main__":
                 parsesFile.write("(TOP Error: see 'debug.log')\n")
                 
         parsesFile.close()
+        print 'Parsing duration: %f seconds' %(time.clock()-start)
+        print 'End parsing at: %s' %time.asctime()
     else:
         print "Enter a sentence. Type 'q' to quit."
         line = raw_input("Sentence: ")
