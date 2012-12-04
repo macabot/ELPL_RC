@@ -46,8 +46,10 @@ def makeForest(string, grammar):
                             if currentProb > probs.get((lhs[1], i, j), -1):
                                 probs[(lhs[1], i, j)] = currentProb
                                 parseForest.setdefault((i,j), {})[lhs[1]] = (x, y, k)
-                                extendUnary(lhs[1], grammar, parseForest, probs, i, j) # extend with unary rules                               
+                                #extendUnary(lhs[1], grammar, parseForest, probs, i, j) # extend with unary rules                               
     
+    for node in dict(parseForest.get((0,len(words)), {})): # extend nodes with span [0,n) with unary rules
+        extendUnary(node, grammar, parseForest, probs, 0, len(words))
     return parseForest, probs
                     
 def extendUnary(node, grammar, parseForest, probs, i, j):
@@ -69,8 +71,6 @@ def extendUnary(node, grammar, parseForest, probs, i, j):
             extendUnary(lhs[1], grammar, parseForest, probs, i, j)
                     
 if __name__ == "__main__":
-    # TODO if given -c and -g then don't ignore -c, but create a new grammar using
-    # -c and save as -g
     try:
         opts, args = getopt.getopt(sys.argv[1:], "c:g:s:")
     except getopt.GetoptError as e:
