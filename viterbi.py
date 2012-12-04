@@ -86,28 +86,6 @@ def viterbi(parseForest, probs, i, j, node='TOP', repeat=False):
     else: # if unary rule
         return nltk.Tree(node, [leftChild])
 
-'''
-# TODO remove        
-def maxEntry(entries, probs, i, j, node):
-    """Finds the entry with the highest probability that starts
-    with 'node'.
-    Arguments:
-    entries     - list of entries (parent, leftChild, rightChild, k)
-    probs       - dictionary mapping entry to its probability
-    i           - left index of span (inclusive)
-    j           - right index of span (exclusive)
-    node        - first argument of entry must be equal to 'node'
-    Return:
-    bestEntry   - entry with highest probability that starts with
-    'node'"""
-    bestEntry = None
-    bestProb = -1
-    for entry in entries:
-        if entry[0]==node and bestProb < probs[(entry[0], i, j)]:
-            bestEntry = entry
-            bestProb = probs[(entry[0], i, j)]
-    return bestEntry
-'''
 
 if __name__ == "__main__":
     try:
