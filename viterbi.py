@@ -1,6 +1,8 @@
 '''
 By:
 Michael Cabot (6047262), Richard Rozeboom (6173292)
+
+Creates the most probable derivation of a sentence.
 '''
 
 import nltk.tree

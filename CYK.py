@@ -1,6 +1,13 @@
 '''
 By:
 Michael Cabot (6047262), Richard Rozeboom (6173292)
+
+Creates a parse forest for a sentence given a corpus. The parse forest
+is represented by a dictionary that maps a span [i,j) to a dictionary
+mapping parents to their left and right child. Each parent represents
+a partial derivation of the sentence. The probability of these parents
+are kept in a separate dictionary mapping a node in a span to its
+probability.
 '''
 
 import sys

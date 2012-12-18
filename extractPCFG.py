@@ -1,6 +1,14 @@
 '''
 By:
 Michael Cabot (6047262), Richard Rozeboom (6173292)
+
+Creates a PCFG from a tree corpus. The PCFG is 
+represented by a dictionary that maps the right-hand-side of
+a production rule to all possible left-hand-sides along with the
+probability of each rule. When creating the grammar, all words that
+occur less than 5 times in the corpus are replaced with the unique
+symbol 'XXXUNKNOWNXXX'. This way an unknown word can be treated as if
+it is this symbol.
 '''
 
 import re
